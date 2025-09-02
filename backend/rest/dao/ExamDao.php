@@ -11,11 +11,12 @@ class ExamDao
   public function __construct()
   {
     try {
-      $dsn = 'mysql:dbname=webfinale;host=localhost;port=3306';
-      $this->conn = new PDO($dsn, 'root', 'zollero0000', [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
-      ]);
+      $dsn = "mysql:host=localhost;port=3306;dbname=webfinale";
+      $user = "root";
+      $passw = "zollero0000";
+
+      $this->conn = new PDO($dsn, $user, $passw);
+
       /** TODO
        * List parameters such as servername, username, password, schema. Make sure to use appropriate port
        */
@@ -29,7 +30,7 @@ class ExamDao
     }
   }
 
-  //helper function
+  // helper function
 
   public function query($sql, $params = [])
   {
@@ -43,17 +44,11 @@ class ExamDao
    */
   public function employees_performance_report()
   {
-    $sql = "
-        SELECT e.employeeNumber AS id,
-               CONCAT(e.firstName, ' ', e.lastName) AS full_name,
-               e.email,
-               IFNULL(SUM(p.amount),0) AS total
-        FROM employees e
-        LEFT JOIN customers c ON e.employeeNumber = c.salesRepEmployeeNumber
-        LEFT JOIN payments p ON c.customerNumber = p.customerNumber
-        GROUP BY e.employeeNumber
-    ";
-
+    $sql = "SELECT e.employeeNumber as id, CONCAT(e.firstName, ' ' , e.lastName) as fullName , e.email , IFNULL(SUM(p.amount),0) as total 
+    FROM employees e 
+    left join customers c on e.employeeNumber = c.salesRepEmployeeNumber 
+    left join payments p on c.customerNumber = p.customerNumber
+    group by e.employeeNumber";
     return $this->query($sql)->fetchAll(PDO::FETCH_ASSOC);
   }
 
@@ -62,7 +57,7 @@ class ExamDao
    */
   public function delete_employee($employee_id)
   {
-    $sql = "DELETE FROM employees e WHERE e.employeeNumber = (:employee_id)";
+    $sql = "DELETE FROM employees e WHERE e.employeeNumber = :employee_id";
     return $this->query($sql, ['employee_id' => $employee_id]);
   }
 
@@ -71,26 +66,13 @@ class ExamDao
    */
   public function edit_employee($employee_id, $data)
   {
-    $fields = "";
-    foreach ($data as $key => $value) {
-      $fields .= "$key = :$key, ";
-    }
-    $fields = rtrim($fields, ", ");
-    $sql = "UPDATE employees e SET $fields WHERE e.employeeNumber = :id";
-    $stmt = $this->conn->prepare($sql);
-    $data['id'] = $employee_id;
-    $stmt->execute($data);
-
-    $stmt = $this->conn->prepare("
-        SELECT e.employeeNumber AS id,
-               e.firstName AS first_name,
-               e.lastName AS last_name,
-               e.email
-        FROM employees e
-        WHERE e.employeeNumber = :id
-    ");
-    $stmt->execute(['id' => $employee_id]);
-    return $stmt->fetch(PDO::FETCH_ASSOC);
+    $sql = "UPDATE employees SET firstName = :firstName , lastName = :lastName , email = :email WHERE employeeNumber = :employee_id";
+    return $this->query($sql, [
+      'firstName' => $data['firstName'],
+      'lastName' => $data['lastName'],
+      'email' => $data['email'],
+      'employee_id' => $employee_id
+    ]);
   }
 
   /** TODO
@@ -98,15 +80,12 @@ class ExamDao
    */
   public function get_orders_report()
   {
-    $stmt = $this->conn->prepare("
-        SELECT o.orderNumber AS order_number,
-               SUM(od.quantityOrdered * od.priceEach) AS total_amount
-        FROM orders o
-        JOIN orderdetails od ON o.orderNumber = od.orderNumber
-        GROUP BY o.orderNumber
-    ");
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $sql = "SELECT o.orderNumber as order_number, 
+                  IFNULL(SUM(od.quantityOrdered * od.priceEach),0) as total_amount
+                  from orders o left join orderdetails od on o.orderNumber = od.orderNumber
+                  group by o.orderNumber";
+
+    return $this->query($sql)->fetchAll(PDO::FETCH_ASSOC);
   }
 
   /** TODO
@@ -114,9 +93,18 @@ class ExamDao
    */
   public function get_order_details($order_id)
   {
-    $stmt = $this->conn->prepare("SELECT p.productName , o.quantityOrdered , o.priceEach FROM orderdetails o JOIN products p ON o.productCode = p.productCode WHERE o.orderNumber = :order_id");
-    $stmt->bindValue(":order_id", $order_id);
-    $stmt->execute();
-    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $sql = "SELECT p.productName , od.quantityOrdered , od.priceEach 
+    from orderdetails od
+    left join products p on od.productCode = p.productCode
+    where od.orderNumber = :order_id";
+    return $this->query($sql, ['order_id' => $order_id])->fetchAll(PDO::FETCH_ASSOC);
+  }
+
+  // additional 
+
+  public function get_employee($employee_id)
+  {
+    $sql = "SELECT e.employeeNumber, e.firstName , e.lastName , e.email from employees e where e.employeeNumber = :employee_id";
+    return $this->query($sql, ['employee_id' => $employee_id])->fetch(PDO::FETCH_ASSOC);
   }
 }

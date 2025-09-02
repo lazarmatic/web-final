@@ -24,7 +24,8 @@ Flight::route('GET /employees/performance', function () {
      * This endpoint should return output in JSON format
      * 10 points
      */
-    Flight::json(['message' => "Employees performance report returned", 'data' => Flight::examService()->employees_performance_report()]);
+    $data = Flight::examService()->employees_performance_report();
+    Flight::json($data);
 });
 
 Flight::route('DELETE /employee/delete/@employee_id', function ($employee_id) {
@@ -35,7 +36,7 @@ Flight::route('DELETE /employee/delete/@employee_id', function ($employee_id) {
      * 5 points
      */
     Flight::examService()->delete_employee($employee_id);
-    Flight::json(['message' => "User has beeen deleted."]);
+    Flight::json(['message' => "Deleted Succesfully"]);
 });
 
 Flight::route('PUT /employee/edit/@employee_id', function ($employee_id) {
@@ -49,9 +50,10 @@ Flight::route('PUT /employee/edit/@employee_id', function ($employee_id) {
      * This endpoint should return the edited customer in JSON format
      * 10 points
      */
-    $data = Flight::request()->data->getData();
-    $updatedEmployee = Flight::examService()->edit_employee($employee_id, $data);
-    Flight::json(['message' => "User has been edited.", 'data' => $updatedEmployee]);
+    $raw = Flight::request()->getBody();
+    parse_str($raw, $data);   // 👈 convert "firstName=Miki&lastName=Matic..." into array
+    Flight::examService()->edit_employee($employee_id, $data);
+    Flight::json($data);
 });
 
 Flight::route('GET /orders/report', function () {
@@ -68,7 +70,8 @@ Flight::route('GET /orders/report', function () {
      * This endpoint should return output in JSON format
      * 10 points
      */
-    Flight::json(['message' => "Orders report returned", 'data' => Flight::examService()->get_orders_report()]);
+    $data = Flight::examService()->get_orders_report();
+    Flight::json($data);
 });
 
 Flight::route('GET /order/details/@order_id', function ($order_id) {
@@ -82,5 +85,11 @@ Flight::route('GET /order/details/@order_id', function ($order_id) {
      * This endpoint should return output in JSON format
      * 10 points
      */
-    Flight::json(['message' => "Order details returned", 'data' => Flight::examService()->get_order_details($order_id)]);
+    $data = Flight::examService()->get_order_details($order_id);
+    Flight::json($data);
+});
+
+Flight::route('GET /employee/@employee_id', function ($employee_id) {
+    $data = Flight::examService()->get_employee($employee_id);
+    Flight::json($data);
 });

@@ -39,7 +39,13 @@ class ExamService
      */
     public function get_orders_report()
     {
-        return $this->dao->get_orders_report();
+        $data = $this->dao->get_orders_report();
+        foreach ($data as &$row) {
+            $id = $row['order_number'];
+            $row['details'] =
+                '<button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#order-details-modal" data-bs-id="@' . $id . '">Details</button>';
+        }
+        return $data;
     }
 
     /** TODO
@@ -48,5 +54,10 @@ class ExamService
     public function get_order_details($order_id)
     {
         return $this->dao->get_order_details($order_id);
+    }
+
+    public function get_employee($employee_id)
+    {
+        return $this->dao->get_employee($employee_id);
     }
 }
